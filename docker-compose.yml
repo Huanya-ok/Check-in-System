@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: checkin
+      POSTGRES_PASSWORD: checkin
+      POSTGRES_DB: checkin
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  api:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://checkin:checkin@db:5432/checkin
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: change-me-in-production
+    volumes:
+      - uploads:/app/uploads
+      - faiss_data:/app/data
+    depends_on:
+      - db
+      - redis
+
+volumes:
+  pgdata:
+  uploads:
+  faiss_data:

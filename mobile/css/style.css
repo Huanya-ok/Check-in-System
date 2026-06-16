@@ -1,0 +1,120 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  background: #f0f2f5;
+  color: #1a1a2e;
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+header { text-align: center; margin-bottom: 24px; }
+header h1 { font-size: 1.6rem; font-weight: 700; }
+.subtitle { color: #666; margin-top: 4px; font-size: 0.9rem; }
+
+.camera-area {
+  background: #000;
+  border-radius: 16px;
+  overflow: hidden;
+  aspect-ratio: 3/4;
+  margin-bottom: 16px;
+}
+
+#video, #preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.btn {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+}
+
+.btn.primary { background: #4361ee; color: #fff; }
+.btn.secondary { background: #e8eaf6; color: #4361ee; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.result {
+  padding: 16px;
+  border-radius: 12px;
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.result.success { background: #d4edda; color: #155724; }
+.result.error { background: #f8d7da; color: #721c24; }
+
+.card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.card h2 { font-size: 1.1rem; margin-bottom: 12px; }
+
+input[type="text"], input[type="password"], input[type="date"], input[type="file"] {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+.tab {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  background: #e8eaf6;
+  cursor: pointer;
+  font-weight: 600;
+}
+.tab.active { background: #4361ee; color: #fff; }
+
+.list { list-style: none; margin-top: 12px; }
+.list li {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.list li button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  background: #fee;
+  color: #c00;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+footer { text-align: center; margin-top: 24px; }
+footer a { color: #4361ee; text-decoration: none; font-size: 0.9rem; }
