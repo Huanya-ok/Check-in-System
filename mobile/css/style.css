@@ -11,6 +11,7 @@ body {
   max-width: 480px;
   margin: 0 auto;
   padding: 24px 16px;
+  padding-bottom: 32px;
 }
 
 header { text-align: center; margin-bottom: 24px; }
@@ -114,6 +115,86 @@ input[type="text"], input[type="password"], input[type="date"], input[type="file
   color: #c00;
   cursor: pointer;
   font-size: 0.8rem;
+}
+
+.camera-area.small {
+  aspect-ratio: 4/3;
+  margin: 12px 0;
+}
+
+.nav-links {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: center;
+  margin-top: 24px;
+}
+
+.nav-links a {
+  color: #4361ee;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.link-btn {
+  display: block;
+  text-decoration: none;
+  margin-top: 12px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.stat-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.stat-card.success .stat-value { color: #155724; }
+.stat-card.warning .stat-value { color: #856404; }
+
+.stat-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #4361ee;
+}
+
+.stat-label {
+  margin-top: 4px;
+  font-size: 0.75rem;
+  color: #666;
+}
+
+.list li.empty {
+  justify-content: center;
+  color: #888;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.toolbar input[type="date"] {
+  flex: 1;
+  min-width: 140px;
+  margin-bottom: 0;
+}
+
+.toolbar .btn {
+  flex: 1;
+  padding: 12px;
 }
 
 footer { text-align: center; margin-top: 24px; }

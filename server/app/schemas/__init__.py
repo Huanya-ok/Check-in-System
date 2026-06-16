@@ -6,6 +6,9 @@ from pydantic import BaseModel
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    username: str
+    name: str
+    role: str = "student"
 
 
 class LoginRequest(BaseModel):
@@ -13,21 +16,23 @@ class LoginRequest(BaseModel):
     password: str
 
 
-class FaceProfileResponse(BaseModel):
-    id: int
+class RegisterResponse(BaseModel):
+    message: str
+    username: str
     name: str
-    employee_no: str
-    photo_path: str
-    is_active: bool
-    created_at: datetime
+    student_no: str
+    access_token: str
+    token_type: str = "bearer"
 
-    model_config = {"from_attributes": True}
+
+class MessageResponse(BaseModel):
+    message: str
 
 
 class CheckInResponse(BaseModel):
     success: bool
     name: str | None = None
-    employee_no: str | None = None
+    student_no: str | None = None
     message: str
 
 
@@ -35,8 +40,22 @@ class CheckInRecordResponse(BaseModel):
     id: int
     face_profile_id: int
     name: str
-    employee_no: str
+    student_no: str
     check_in_time: datetime
     similarity_score: float
 
     model_config = {"from_attributes": True}
+
+
+class AbsentStudent(BaseModel):
+    name: str
+    student_no: str
+
+
+class TeacherOverviewResponse(BaseModel):
+    date: str
+    total_registered: int
+    checked_in_count: int
+    absent_count: int
+    records: list[CheckInRecordResponse]
+    absent_students: list[AbsentStudent]

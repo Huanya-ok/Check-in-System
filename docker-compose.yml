@@ -25,9 +25,13 @@ services:
       DATABASE_URL: postgresql+asyncpg://checkin:checkin@db:5432/checkin
       REDIS_URL: redis://redis:6379/0
       SECRET_KEY: change-me-in-production
+      HUAWEI_AK: ${HUAWEI_AK:-}
+      HUAWEI_SK: ${HUAWEI_SK:-}
+      HUAWEI_PROJECT_ID: ${HUAWEI_PROJECT_ID:-}
+      HUAWEI_FRS_REGION: ${HUAWEI_FRS_REGION:-cn-north-4}
+      HUAWEI_FACE_SET_NAME: ${HUAWEI_FACE_SET_NAME:-checkin_face_set}
     volumes:
       - uploads:/app/uploads
-      - faiss_data:/app/data
     depends_on:
       - db
       - redis
@@ -35,4 +39,3 @@ services:
 volumes:
   pgdata:
   uploads:
-  faiss_data:

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>签到记录</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>签到记录</h1>
+      <p id="userInfo" class="subtitle">请先登录</p>
+    </header>
+
+    <section id="loginHint" class="card">
+      <p>查看签到记录需要登录。</p>
+      <a href="login.html" class="btn primary link-btn">去登录</a>
+    </section>
+
+    <section id="recordsPanel" class="card" hidden>
+      <input id="recordDate" type="date">
+      <button id="btnLoad" class="btn secondary" type="button">按日期筛选</button>
+      <ul id="recordList" class="list"></ul>
+      <button id="btnLogout" class="btn secondary" type="button">注销</button>
+    </section>
+
+    <nav class="nav-links">
+      <a href="index.html">返回签到</a>
+    </nav>
+  </div>
+  <script src="js/config.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/records.js"></script>
+</body>
+</html>

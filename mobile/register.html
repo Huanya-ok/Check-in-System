@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>用户注册</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>用户注册</h1>
+      <p class="subtitle">填写基本信息并上传标准人脸照片</p>
+    </header>
+
+    <section class="card">
+      <input id="name" type="text" placeholder="姓名" autocomplete="name">
+      <input id="studentNo" type="text" placeholder="学号" autocomplete="off">
+      <input id="username" type="text" placeholder="用户名（登录用）" autocomplete="username">
+      <input id="password" type="password" placeholder="密码" autocomplete="new-password">
+
+      <div class="camera-area small">
+        <video id="video" autoplay playsinline></video>
+        <canvas id="canvas" hidden></canvas>
+        <img id="preview" hidden alt="人脸预览">
+      </div>
+
+      <div class="actions">
+        <button id="btnCapture" class="btn secondary" type="button">拍照</button>
+        <label class="btn secondary">
+          从相册选择
+          <input type="file" id="fileInput" accept="image/*" capture="user" hidden>
+        </label>
+      </div>
+
+      <button id="btnRegister" class="btn primary" type="button">提交注册</button>
+      <div id="result" class="result" hidden></div>
+    </section>
+
+    <nav class="nav-links">
+      <a href="login.html">已有账号？去登录</a>
+      <a href="index.html">返回签到</a>
+    </nav>
+  </div>
+  <script src="js/config.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/register.js"></script>
+</body>
+</html>

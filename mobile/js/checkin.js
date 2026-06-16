@@ -1,5 +1,3 @@
-const API_BASE = '/api';
-
 const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
 const preview = document.getElementById('preview');
@@ -9,7 +7,6 @@ const fileInput = document.getElementById('fileInput');
 const resultEl = document.getElementById('result');
 
 let stream = null;
-let capturedBlob = null;
 
 async function startCamera() {
   try {
@@ -20,7 +17,7 @@ async function startCamera() {
     video.srcObject = stream;
     video.hidden = false;
     preview.hidden = true;
-  } catch (err) {
+  } catch {
     showResult('无法访问摄像头，请使用相册上传', false);
   }
 }
@@ -33,7 +30,8 @@ function showResult(message, success) {
 
 async function submitCheckIn(blob) {
   btnCapture.disabled = true;
-  showResult('识别中...', true);
+  resultEl.hidden = false;
+  resultEl.textContent = '识别中...';
   resultEl.className = 'result';
 
   const form = new FormData();
@@ -55,7 +53,6 @@ function captureFromVideo() {
   canvas.height = video.videoHeight;
   canvas.getContext('2d').drawImage(video, 0, 0);
   canvas.toBlob(async (blob) => {
-    capturedBlob = blob;
     preview.src = URL.createObjectURL(blob);
     preview.hidden = false;
     video.hidden = true;
@@ -67,7 +64,6 @@ function captureFromVideo() {
 btnCapture.addEventListener('click', captureFromVideo);
 
 btnRetake.addEventListener('click', () => {
-  capturedBlob = null;
   resultEl.hidden = true;
   btnRetake.hidden = true;
   video.hidden = false;

@@ -3,7 +3,6 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select
 
 from app.api.routes import router
@@ -18,16 +17,23 @@ async def init_db() -> None:
         await conn.run_sync(Base.metadata.create_all)
 
     async with async_session() as session:
-        result = await session.execute(select(User).where(User.username == "admin"))
+        result = await session.execute(select(User).where(User.username == "teacher"))
         if result.scalar_one_or_none() is None:
-            session.add(User(username="admin", password_hash=hash_password("admin123")))
+            session.add(
+                User(
+                    username="teacher",
+                    password_hash=hash_password("teacher123"),
+                    name="教师",
+                    student_no="T000000",
+                    role="teacher",
+                )
+            )
             await session.commit()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Path(settings.upload_dir).mkdir(parents=True, exist_ok=True)
-    Path(settings.faiss_index_path).parent.mkdir(parents=True, exist_ok=True)
     await init_db()
     yield
 
@@ -43,17 +49,3 @@ app.add_middleware(
 )
 
 app.include_router(router, prefix="/api")
-
-
-@app.get("/api/health")
-async def health():
-    return {"status": "ok"}
-
-
-_candidates = [
-    Path(__file__).resolve().parent.parent.parent / "mobile",
-    Path(__file__).resolve().parent.parent / "mobile",
-]
-mobile_dir = next((p for p in _candidates if p.exists()), None)
-if mobile_dir:
-    app.mount("/", StaticFiles(directory=str(mobile_dir), html=True), name="mobile")

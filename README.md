@@ -1,69 +1,62 @@
 # 人脸识别签到系统
 
-基于移动端拍照 + 云端人脸识别的签到系统。详细设计见 [docs/DESIGN.md](docs/DESIGN.md)。
+纯手机端签到应用 + 云端 API 服务。详细设计见 [docs/DESIGN.md](docs/DESIGN.md)。
 
-## 功能模块
+## 架构
 
-| 模块 | 登录 | 说明 |
-|------|------|------|
-| 签到 | 否 | 拍照上传 → 人脸识别 → 记录签到 |
-| 照片库管理 | 是 | 录入/删除人脸底库 |
-| 签到记录 | 是 | 按日期查询历史记录 |
+```
+mobile/（手机 H5）  ──HTTP API──►  server/（FastAPI 纯后端）
+                                      │
+                                      ▼
+                                 华为云 FRS
+```
 
-## 技术栈
-
-- **后端**：Python 3.11 + FastAPI
-- **人脸识别**：InsightFace（RetinaFace 检测 + ArcFace 编码）+ FAISS 向量检索
-- **数据库**：PostgreSQL + Redis
-- **移动端**：HTML5 响应式页面（浏览器拍照）
+学生与教师均在**手机浏览器**中使用，服务端只提供 API。
 
 ## 快速启动
 
-### Docker（推荐）
+### 1. 启动服务端
 
 ```bash
 docker compose up -d --build
 ```
 
-访问 http://localhost:8000 进行签到，http://localhost:8000/admin.html 进入管理页。
+API 文档：http://localhost:8000/docs
 
-默认管理员：`admin` / `admin123`
-
-### 本地开发
+### 2. 启动手机端
 
 ```bash
-# 启动 PostgreSQL 和 Redis（或使用 docker compose up db redis -d）
-cd server
-pip install -r requirements.txt
-cp .env.example .env
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+cd mobile
+# 编辑 js/config.js，API_BASE 改为 http://<服务器IP>:8000/api
+python -m http.server 3000
 ```
 
-首次运行会自动下载 InsightFace 模型权重（约 300MB）。
+手机浏览器访问：`http://<电脑局域网IP>:3000`
+
+### 3. 配置华为云 FRS
+
+在 `server/.env` 填入 `HUAWEI_AK`、`HUAWEI_SK`、`HUAWEI_PROJECT_ID`（见 `server/.env.example`）。
+
+## 教师账号
+
+- 手机打开：`http://<IP>:3000/dashboard.html`
+- 账号：`teacher` / `teacher123`
 
 ## 项目结构
 
 ```
 Check-in-System/
-├── docs/DESIGN.md       # 系统设计文档
-├── server/              # FastAPI 后端
-│   └── app/
-│       ├── api/         # API 路由
-│       ├── models/      # 数据库模型
-│       ├── services/    # 人脸识别服务
-│       └── core/        # 认证与安全
-├── mobile/              # H5 移动端页面
+├── mobile/          # 手机端 H5（刘杨）
+├── server/          # 后端 API（陆俊睿）+ FRS（卞浩宇）
+├── docs/DESIGN.md
 └── docker-compose.yml
 ```
 
-## API 概览
+## 演示流程
 
-| 方法 | 路径 | 认证 | 说明 |
-|------|------|------|------|
-| POST | `/api/check-in` | 否 | 上传照片签到 |
-| POST | `/api/auth/login` | 否 | 管理员登录 |
-| POST | `/api/faces` | 是 | 录入人脸 |
-| GET | `/api/faces` | 是 | 列出底库 |
-| GET | `/api/check-in/records` | 是 | 查询签到记录 |
+1. 手机打开注册页 → 注册并上传人脸照
+2. 手机签到页拍照签到
+3. 教师用手机打开总览页查看全班情况
+4. 电脑截图数据库作为服务端佐证
 
-完整 API 文档：启动后访问 http://localhost:8000/docs
+更多说明见 [mobile/README.md](mobile/README.md)。

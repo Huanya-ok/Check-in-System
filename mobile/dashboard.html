@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>教师签到总览</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>教师总览</h1>
+      <p id="userInfo" class="subtitle">查看全班签到情况</p>
+    </header>
+
+    <section id="loginSection" class="card">
+      <h2>教师登录</h2>
+      <input id="username" type="text" placeholder="教师账号" value="teacher">
+      <input id="password" type="password" placeholder="密码" value="teacher123">
+      <button id="btnLogin" class="btn primary" type="button">登录</button>
+      <div id="loginResult" class="result" hidden></div>
+    </section>
+
+    <section id="dashboardPanel" hidden>
+      <div class="toolbar">
+        <input id="overviewDate" type="date">
+        <button id="btnRefresh" class="btn secondary" type="button">查询</button>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="statTotal">0</div>
+          <div class="stat-label">已注册</div>
+        </div>
+        <div class="stat-card success">
+          <div class="stat-value" id="statChecked">0</div>
+          <div class="stat-label">已签到</div>
+        </div>
+        <div class="stat-card warning">
+          <div class="stat-value" id="statAbsent">0</div>
+          <div class="stat-label">未签到</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>已签到</h2>
+        <ul id="checkedList" class="list"></ul>
+      </div>
+
+      <div class="card">
+        <h2>未签到</h2>
+        <ul id="absentList" class="list"></ul>
+      </div>
+
+      <button id="btnLogout" class="btn secondary" type="button">注销</button>
+    </section>
+
+    <nav class="nav-links">
+      <a href="index.html">返回签到</a>
+    </nav>
+  </div>
+  <script src="js/config.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>
