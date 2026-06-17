@@ -12,16 +12,19 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 60 * 24
 
-    face_similarity_threshold: float = 0.8
+    face_similarity_threshold: float = 0.93
 
     upload_dir: str = "uploads"
+    faiss_index_path: str = "data/face_index.faiss"
 
     # 华为云 FRS 配置（卞浩宇负责申请与调试）
     huawei_ak: str = ""
     huawei_sk: str = ""
+    huawei_face_endpoint: str = ""
     huawei_project_id: str = ""
     huawei_frs_region: str = "cn-north-4"
-    huawei_face_set_name: str = "checkin_face_set"
+    huawei_face_set_name: str = ""
+    huawei_auth_token: str = ""
 
     class Config:
         env_file = ".env"
