@@ -1,80 +1,89 @@
-"""Huawei Cloud FRS face search service.
-
-The service intentionally uses the ByFile APIs so uploaded image bytes can be
-forwarded as multipart/form-data without base64 expansion.
-"""
+"""Huawei Cloud FRS face search service using the official Python SDK."""
 
 from __future__ import annotations
 
+import asyncio
+import base64
+import time
 from typing import Any
-
-import httpx
 
 from app.config import settings
 
 
 class FaceRecognitionService:
     def __init__(self) -> None:
-        self._timeout = httpx.Timeout(30.0)
+        self._client = None
+
+    def _ak(self) -> str:
+        return settings.huaweicloud_sdk_ak or settings.huawei_ak
+
+    def _sk(self) -> str:
+        return settings.huaweicloud_sdk_sk or settings.huawei_sk
+
+    def _region(self) -> str:
+        return settings.huawei_region or settings.huawei_frs_region
 
     def _require_config(self) -> None:
         missing = []
-        if not settings.huawei_face_endpoint:
-            missing.append("HUAWEI_FACE_ENDPOINT")
+        if not self._ak():
+            missing.append("HUAWEICLOUD_SDK_AK")
+        if not self._sk():
+            missing.append("HUAWEICLOUD_SDK_SK")
         if not settings.huawei_project_id:
             missing.append("HUAWEI_PROJECT_ID")
+        if not self._region():
+            missing.append("HUAWEI_REGION")
         if not settings.huawei_face_set_name:
             missing.append("HUAWEI_FACE_SET_NAME")
-        if not settings.huawei_auth_token:
-            missing.append("HUAWEI_AUTH_TOKEN")
         if missing:
-            raise RuntimeError(f"缺少华为云 FRS 配置: {', '.join(missing)}")
+            raise RuntimeError(f"缺少华为云 FRS SDK 配置: {', '.join(missing)}")
 
-    def _url(self, suffix: str) -> str:
+    def _get_client(self):
+        if self._client is not None:
+            return self._client
+
         self._require_config()
-        endpoint = settings.huawei_face_endpoint.rstrip("/")
-        project_id = settings.huawei_project_id
-        face_set_name = settings.huawei_face_set_name
-        return f"{endpoint}/v2/{project_id}/face-sets/{face_set_name}{suffix}"
+        try:
+            from huaweicloudsdkcore.auth.credentials import BasicCredentials
+            from huaweicloudsdkfrs.v2 import FrsClient
+            from huaweicloudsdkfrs.v2.region.frs_region import FrsRegion
+        except ImportError as exc:
+            raise RuntimeError("请安装华为云 FRS SDK: pip install huaweicloudsdkcore huaweicloudsdkfrs") from exc
 
-    def _headers(self) -> dict[str, str]:
-        self._require_config()
-        return {"X-Auth-Token": settings.huawei_auth_token}
+        credentials = BasicCredentials(self._ak(), self._sk(), settings.huawei_project_id)
+        self._client = (
+            FrsClient.new_builder(FrsClient)
+            .with_credentials(credentials)
+            .with_region(FrsRegion.value_of(self._region()))
+            .build()
+        )
+        return self._client
 
-    def _image_file(self, filename: str, image_bytes: bytes) -> dict[str, tuple[str, bytes, str]]:
+    def _to_base64(self, image_bytes: bytes) -> str:
         if not image_bytes:
             raise ValueError("图片内容为空")
-        return {"image_file": (filename, image_bytes, self._guess_content_type(image_bytes))}
+        return base64.b64encode(image_bytes).decode("utf-8")
 
-    def _guess_content_type(self, image_bytes: bytes) -> str:
-        if image_bytes.startswith(b"\x89PNG\r\n\x1a\n"):
-            return "image/png"
-        if image_bytes.startswith(b"BM"):
-            return "image/bmp"
-        return "image/jpeg"
+    def _to_dict(self, obj: Any) -> dict[str, Any]:
+        if obj is None:
+            return {}
+        if isinstance(obj, dict):
+            return obj
+        if hasattr(obj, "to_dict"):
+            return obj.to_dict()
+        return {
+            "face_id": getattr(obj, "face_id", None),
+            "external_image_id": getattr(obj, "external_image_id", None),
+            "similarity": getattr(obj, "similarity", None),
+            "bounding_box": getattr(obj, "bounding_box", None),
+        }
 
-    def _parse_json(self, response: httpx.Response) -> dict[str, Any]:
-        try:
-            payload = response.json()
-        except ValueError as exc:
-            raise RuntimeError(f"华为云 FRS 返回非 JSON 响应，HTTP {response.status_code}") from exc
-
-        if response.is_error:
-            error_code = payload.get("error_code", "unknown")
-            error_msg = payload.get("error_msg", response.text)
-            if response.status_code in {401, 403}:
-                raise RuntimeError(f"华为云 FRS 鉴权失败或 Token 已过期: {error_code} {error_msg}")
-            raise RuntimeError(f"华为云 FRS 调用失败: HTTP {response.status_code}, {error_code} {error_msg}")
-
-        return payload
-
-    def _first_face(self, payload: dict[str, Any], empty_message: str) -> dict[str, Any]:
-        faces = payload.get("faces") or []
+    def _first_face(self, response: Any, empty_message: str) -> dict[str, Any]:
+        response_dict = self._to_dict(response)
+        faces = response_dict.get("faces") or []
         if not faces:
             raise ValueError(empty_message)
-        if not isinstance(faces[0], dict):
-            raise RuntimeError("华为云 FRS 返回的人脸结果格式异常")
-        return faces[0]
+        return self._to_dict(faces[0])
 
     def _face_result(self, face: dict[str, Any]) -> dict[str, Any]:
         return {
@@ -83,102 +92,155 @@ class FaceRecognitionService:
             "bounding_box": face.get("bounding_box"),
         }
 
-    async def add_face(self, external_image_id: str | int, image_bytes: bytes) -> dict[str, Any]:
-        """Add one face to the configured FRS face set using AddFacesByFile.
+    def _sdk_error(self, action: str, exc: Exception) -> RuntimeError:
+        try:
+            from huaweicloudsdkcore.exceptions import exceptions
+        except ImportError:
+            exceptions = None
 
-        Args:
-            external_image_id: Caller-provided unique person/image identifier.
-            image_bytes: Raw uploaded image bytes.
+        if exceptions and isinstance(exc, exceptions.ClientRequestException):
+            error_code = getattr(exc, "error_code", "unknown")
+            error_msg = getattr(exc, "error_msg", str(exc))
+            return RuntimeError(f"华为云 FRS {action}失败: {error_code} {error_msg}")
+        return RuntimeError(f"华为云 FRS {action}失败: {exc.__class__.__name__}")
 
-        Returns:
-            A dict containing face_id, external_image_id, and bounding_box.
-        """
-        url = self._url("/faces")
-        data = {
-            "external_image_id": str(external_image_id),
-            "single": "true",
-        }
-        files = self._image_file("face.jpg", image_bytes)
+    def _is_missing_delete_target(self, exc: Exception) -> bool:
+        try:
+            from huaweicloudsdkcore.exceptions import exceptions
+        except ImportError:
+            return False
+
+        return isinstance(exc, exceptions.ClientRequestException) and getattr(exc, "error_code", None) == "FRS.0401"
+
+    def _delete_by_face_id(self, face_id: str | int):
+        from huaweicloudsdkfrs.v2 import DeleteFaceByFaceIdRequest
+
+        request = DeleteFaceByFaceIdRequest()
+        request.face_set_name = settings.huawei_face_set_name
+        request.face_id = str(face_id)
+        return self._get_client().delete_face_by_face_id(request)
+
+    def _delete_by_external_image_id(self, external_image_id: str | int):
+        from huaweicloudsdkfrs.v2 import DeleteFaceByExternalImageIdRequest
+
+        request = DeleteFaceByExternalImageIdRequest()
+        request.face_set_name = settings.huawei_face_set_name
+        request.external_image_id = str(external_image_id)
+        return self._get_client().delete_face_by_external_image_id(request)
+
+    def _add_face_sync(self, external_image_id: str | int, image_bytes: bytes) -> dict[str, Any]:
+        from huaweicloudsdkfrs.v2 import AddFacesBase64Req, AddFacesByBase64Request
+
+        request = AddFacesByBase64Request()
+        request.face_set_name = settings.huawei_face_set_name
+        request.body = AddFacesBase64Req(
+            image_base64=self._to_base64(image_bytes),
+            external_image_id=str(external_image_id),
+            single=True,
+        )
 
         try:
-            async with httpx.AsyncClient(timeout=self._timeout) as client:
-                response = await client.post(url, headers=self._headers(), data=data, files=files)
-        except httpx.RequestError as exc:
-            raise RuntimeError(f"无法连接华为云 FRS: {exc.__class__.__name__}") from exc
+            response = self._get_client().add_faces_by_base64(request)
+        except Exception as exc:
+            raise self._sdk_error("添加人脸", exc) from exc
 
-        payload = self._parse_json(response)
-        face = self._first_face(payload, "人脸添加失败，华为云未返回 face_id")
+        face = self._first_face(response, "人脸添加失败，华为云未返回 face_id")
         result = self._face_result(face)
         if not result["face_id"]:
             raise ValueError("人脸添加失败，华为云未返回 face_id")
         return result
 
-    async def search(self, image_bytes: bytes) -> dict[str, Any]:
-        """Search the configured FRS face set using SearchFaceByFile.
+    def _search_sync(self, image_bytes: bytes) -> dict[str, Any]:
+        from huaweicloudsdkfrs.v2 import FaceSearchBase64Req, SearchFaceByBase64Request
 
-        Returns:
-            A dict containing face_id, external_image_id, similarity, and
-            bounding_box for the best match.
-        """
-        url = self._url("/search")
-        data = {
-            "top_n": "1",
-            "threshold": str(settings.face_similarity_threshold),
-        }
-        files = self._image_file("checkin.jpg", image_bytes)
+        request = SearchFaceByBase64Request()
+        request.face_set_name = settings.huawei_face_set_name
+        request.body = FaceSearchBase64Req(
+            image_base64=self._to_base64(image_bytes),
+            top_n=1,
+            threshold=settings.face_similarity_threshold,
+        )
 
         try:
-            async with httpx.AsyncClient(timeout=self._timeout) as client:
-                response = await client.post(url, headers=self._headers(), data=data, files=files)
-        except httpx.RequestError as exc:
-            raise RuntimeError(f"无法连接华为云 FRS: {exc.__class__.__name__}") from exc
+            response = self._get_client().search_face_by_base64(request)
+        except Exception as exc:
+            raise self._sdk_error("搜索人脸", exc) from exc
 
-        payload = self._parse_json(response)
-        face = self._first_face(payload, "未识别到匹配人脸或相似度不足")
+        face = self._first_face(response, "未识别到匹配人脸或相似度不足")
         result = self._face_result(face)
         result["similarity"] = float(face.get("similarity") or 0.0)
         if not result["face_id"] and not result["external_image_id"]:
             raise ValueError("人脸搜索成功但缺少 face_id 和 external_image_id")
         return result
 
+    def _remove_face_sync(
+        self,
+        face_id: str | int | None = None,
+        external_image_id: str | int | None = None,
+    ) -> dict[str, Any]:
+        if face_id is None and external_image_id is None:
+            raise ValueError("删除人脸需要提供 face_id 或 external_image_id")
+
+        attempts = 4
+        delay_seconds = 2
+        last_error: Exception | None = None
+        for attempt in range(attempts):
+            if attempt:
+                time.sleep(delay_seconds)
+
+            if face_id is not None:
+                deleted_by = "face_id"
+                deleted_value = str(face_id)
+                try:
+                    response = self._delete_by_face_id(face_id)
+                    break
+                except Exception as exc:
+                    last_error = exc
+                    if not self._is_missing_delete_target(exc) or external_image_id is None:
+                        raise self._sdk_error("删除人脸", exc) from exc
+
+            if external_image_id is not None:
+                deleted_by = "external_image_id"
+                deleted_value = str(external_image_id)
+                try:
+                    response = self._delete_by_external_image_id(external_image_id)
+                    break
+                except Exception as exc:
+                    last_error = exc
+                    if not self._is_missing_delete_target(exc):
+                        raise self._sdk_error("删除人脸", exc) from exc
+        else:
+            assert last_error is not None
+            raise self._sdk_error("删除人脸", last_error) from last_error
+
+        response_dict = self._to_dict(response)
+        face_number = int(response_dict.get("face_number") or 0)
+        if face_number <= 0:
+            raise ValueError(f"云端未删除任何人脸，{deleted_by}={deleted_value} 可能不存在")
+
+        return {
+            "face_number": face_number,
+            "face_set_id": response_dict.get("face_set_id"),
+            "face_set_name": response_dict.get("face_set_name"),
+            "deleted_by": deleted_by,
+            "deleted_value": deleted_value,
+        }
+
+    async def add_face(self, external_image_id: str | int, image_bytes: bytes) -> dict[str, Any]:
+        """Add one face to the configured FRS face set using AddFacesByBase64."""
+        return await asyncio.to_thread(self._add_face_sync, external_image_id, image_bytes)
+
+    async def search(self, image_bytes: bytes) -> dict[str, Any]:
+        """Search the configured FRS face set using SearchFaceByBase64."""
+        return await asyncio.to_thread(self._search_sync, image_bytes)
+
     async def remove_face(
         self,
         face_id: str | int | None = None,
         external_image_id: str | int | None = None,
     ) -> dict[str, Any]:
-        """Delete a face from the configured FRS face set.
-
-        Prefer face_id. Pass external_image_id when the cloud face_id is not
-        available.
-        """
-        if face_id is None and external_image_id is None:
-            raise ValueError("删除人脸需要提供 face_id 或 external_image_id")
-
-        query_key = "face_id" if face_id is not None else "external_image_id"
-        query_value = str(face_id if face_id is not None else external_image_id)
-
-        try:
-            async with httpx.AsyncClient(timeout=self._timeout) as client:
-                response = await client.delete(
-                    self._url("/faces"),
-                    headers=self._headers(),
-                    params={query_key: query_value},
-                )
-        except httpx.RequestError as exc:
-            raise RuntimeError(f"无法连接华为云 FRS: {exc.__class__.__name__}") from exc
-
-        payload = self._parse_json(response)
-        face_number = int(payload.get("face_number") or 0)
-        if face_number <= 0:
-            raise ValueError(f"云端未删除任何人脸，{query_key}={query_value} 可能不存在")
-
-        return {
-            "face_number": face_number,
-            "face_set_id": payload.get("face_set_id"),
-            "face_set_name": payload.get("face_set_name"),
-            "deleted_by": query_key,
-            "deleted_value": query_value,
-        }
+        """Delete a face by face_id first, or external_image_id as fallback."""
+        return await asyncio.to_thread(self._remove_face_sync, face_id, external_image_id)
 
 
 face_service = FaceRecognitionService()
