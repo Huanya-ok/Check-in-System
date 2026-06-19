@@ -20,13 +20,19 @@
       <input id="password" type="password" placeholder="密码" autocomplete="new-password">
 
       <div class="camera-area small">
+        <div class="camera-placeholder" id="cameraPlaceholder" hidden>
+          <div class="placeholder-icon">📷</div>
+          <p class="placeholder-text">点击下方「启动摄像头」<br>或从相册选择照片</p>
+        </div>
+
         <video id="video" autoplay playsinline></video>
         <canvas id="canvas" hidden></canvas>
         <img id="preview" hidden alt="人脸预览">
       </div>
 
       <div class="actions">
-        <button id="btnCapture" class="btn secondary" type="button">拍照</button>
+        <button id="btnCamera" class="btn secondary" type="button">启动摄像头</button>
+        <button id="btnCapture" class="btn secondary" type="button" disabled>拍照</button>
         <label class="btn secondary">
           从相册选择
           <input type="file" id="fileInput" accept="image/*" capture="user" hidden>

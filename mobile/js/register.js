@@ -1,28 +1,74 @@
 const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
 const preview = document.getElementById('preview');
+const btnCamera = document.getElementById('btnCamera');
 const btnCapture = document.getElementById('btnCapture');
 const fileInput = document.getElementById('fileInput');
 const btnRegister = document.getElementById('btnRegister');
 const resultEl = document.getElementById('result');
+const cameraPlaceholder = document.getElementById('cameraPlaceholder');
 
 let photoBlob = null;
+let stream = null;
+let isCameraOn = false;
+
+cameraPlaceholder.hidden = false;
+
+// 启动/关闭摄像头
+async function toggleCamera() {
+  if (isCameraOn) {
+    stopCamera();
+  } else {
+    await startCamera();
+  }
+}
 
 async function startCamera() {
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({
+    stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
       audio: false,
     });
     video.srcObject = stream;
-  } catch {
-    showResult('无法访问摄像头，请使用相册上传', false);
+    video.hidden = false;
+    cameraPlaceholder.hidden = true;
+    preview.hidden = true;
+    
+    isCameraOn = true;
+    btnCamera.textContent = '关闭摄像头';
+    btnCapture.disabled = false;
+    
+    console.log('[Camera] 摄像头已启动');
+  } catch (err) {
+    console.error('[Camera] 摄像头启动失败:', err);
+    showResult('无法访问摄像头,请使用相册上传', false);
+    isCameraOn = false;
+    btnCamera.textContent = '启动摄像头';
+    btnCapture.disabled = true;
   }
+}
+
+function stopCamera() {
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop());
+    stream = null;
+  }
+  
+  video.srcObject = null;
+  video.hidden = true;
+  cameraPlaceholder.hidden = false;
+  
+  isCameraOn = false;
+  btnCamera.textContent = '启动摄像头';
+  btnCapture.disabled = true;
+  
+  console.log('[Camera] 摄像头已关闭');
 }
 
 function setPhoto(blob) {
   photoBlob = blob;
   preview.src = URL.createObjectURL(blob);
+  preview.classList.add('flipped'); // 拍照的照片也翻转
   preview.hidden = false;
   video.hidden = true;
 }
@@ -33,16 +79,41 @@ function showResult(message, success) {
   resultEl.className = 'result ' + (success ? 'success' : 'error');
 }
 
+btnCamera.addEventListener('click', toggleCamera);
+
 btnCapture.addEventListener('click', () => {
+  if (!isCameraOn) {
+    showResult('请先启动摄像头', false);
+    return;
+  }
+  
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
-  canvas.getContext('2d').drawImage(video, 0, 0);
+  const ctx = canvas.getContext('2d');
+  
+  // 左右翻转绘制(镜像效果)
+  ctx.translate(canvas.width, 0);
+  ctx.scale(-1, 1);
+  ctx.drawImage(video, 0, 0);
+  
   canvas.toBlob((blob) => setPhoto(blob), 'image/jpeg', 0.9);
 });
 
 fileInput.addEventListener('change', (e) => {
   const file = e.target.files[0];
-  if (file) setPhoto(file);
+  if (!file) return;
+  
+  // 从相册上传的照片不翻转
+  photoBlob = file;
+  preview.src = URL.createObjectURL(file);
+  preview.classList.remove('flipped'); // 确保没有翻转类
+  preview.hidden = false;
+  video.hidden = true;
+  
+  // 如果摄像头正在运行,先关闭
+  if (isCameraOn) {
+    stopCamera();
+  }
 });
 
 btnRegister.addEventListener('click', async () => {
@@ -72,13 +143,14 @@ btnRegister.addEventListener('click', async () => {
       return;
     }
     setAuth(data.access_token, { username: data.username, name: data.name, role: 'student' });
-    showResult(`${data.message}，即将跳转...`, true);
+    showResult(`${data.message},即将跳转...`, true);
     setTimeout(() => { window.location.href = 'records.html'; }, 1500);
   } catch {
-    showResult('网络错误，请稍后重试', false);
+    showResult('网络错误,请稍后重试', false);
   } finally {
     btnRegister.disabled = false;
   }
 });
 
-startCamera();
+// 页面加载时自动启动摄像头
+// startCamera();

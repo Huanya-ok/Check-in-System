@@ -14,13 +14,19 @@
     </header>
 
     <div class="camera-area">
+      <div class="camera-placeholder" id="cameraPlaceholder" hidden>
+        <div class="placeholder-icon">📷</div>
+        <p class="placeholder-text">点击下方「启动摄像头」<br>或从相册选择照片</p>
+      </div>
+
       <video id="video" autoplay playsinline></video>
       <canvas id="canvas" hidden></canvas>
       <img id="preview" hidden alt="预览">
     </div>
 
     <div class="actions">
-      <button id="btnCapture" class="btn primary">拍照签到</button>
+      <button id="btnCamera" class="btn secondary">启动摄像头</button>
+      <button id="btnCapture" class="btn primary" disabled>拍照签到</button>
       <button id="btnRetake" class="btn secondary" hidden>重拍</button>
       <label class="btn secondary">
         从相册选择
