@@ -3,6 +3,7 @@ const canvas = document.getElementById('canvas');
 const preview = document.getElementById('preview');
 const btnCamera = document.getElementById('btnCamera');
 const btnCapture = document.getElementById('btnCapture');
+const btnRetake = document.getElementById('btnRetake');
 const fileInput = document.getElementById('fileInput');
 const btnRegister = document.getElementById('btnRegister');
 const resultEl = document.getElementById('result');
@@ -71,6 +72,8 @@ function setPhoto(blob) {
   preview.classList.add('flipped'); // 拍照的照片也翻转
   preview.hidden = false;
   video.hidden = true;
+  cameraPlaceholder.hidden = true;
+  btnRetake.hidden = false; // 显示重拍按钮
 }
 
 function showResult(message, success) {
@@ -99,6 +102,24 @@ btnCapture.addEventListener('click', () => {
   canvas.toBlob((blob) => setPhoto(blob), 'image/jpeg', 0.9);
 });
 
+// 重拍按钮事件
+btnRetake.addEventListener('click', () => {
+  photoBlob = null;
+  preview.hidden = true;
+  preview.classList.remove('flipped');
+  btnRetake.hidden = true;
+  
+  if (isCameraOn) {
+    // 如果摄像头已开启，返回摄像头画面
+    video.hidden = false;
+    cameraPlaceholder.hidden = true;
+  } else {
+    // 如果摄像头未开启，显示占位符
+    video.hidden = true;
+    cameraPlaceholder.hidden = false;
+  }
+});
+
 fileInput.addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (!file) return;
@@ -109,11 +130,8 @@ fileInput.addEventListener('change', (e) => {
   preview.classList.remove('flipped'); // 确保没有翻转类
   preview.hidden = false;
   video.hidden = true;
-  
-  // 如果摄像头正在运行,先关闭
-  if (isCameraOn) {
-    stopCamera();
-  }
+  cameraPlaceholder.hidden = true;
+  btnRetake.hidden = false; // 显示重拍按钮
 });
 
 btnRegister.addEventListener('click', async () => {

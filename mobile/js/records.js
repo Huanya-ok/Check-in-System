@@ -28,8 +28,7 @@ async function loadRecords() {
   const records = await res.json();
   recordList.innerHTML = records.length
     ? records.map((r) =>
-        `<li><span>${new Date(r.check_in_time).toLocaleString()}</span>
-         <span>${(r.similarity_score * 100).toFixed(1)}%</span></li>`
+        `<li><span>${new Date(r.check_in_time).toLocaleString()}</span></li>`
       ).join('')
     : '<li class="empty">暂无签到记录</li>';
 }
