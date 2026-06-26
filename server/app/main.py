@@ -22,7 +22,7 @@ async def init_db() -> None:
             session.add(
                 User(
                     username="teacher",
-                    password_hash=hash_password("teacher123"),
+                    password_hash=hash_password("123456"),
                     name="教师",
                     student_no="T000000",
                     role="teacher",

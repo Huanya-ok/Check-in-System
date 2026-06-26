@@ -91,8 +91,8 @@ async def register(
     await db.flush()
 
     try:
-        frs_face_id = await face_service.add_face(profile.id, content)
-        profile.frs_face_id = frs_face_id
+        face_result = await face_service.add_face(profile.id, content)
+        profile.frs_face_id = face_result.get("face_id")
     except (ValueError, RuntimeError) as exc:
         await db.rollback()
         photo_path.unlink(missing_ok=True)
@@ -132,12 +132,19 @@ async def logout(_: User = Depends(get_current_user)):
 async def check_in(photo: UploadFile = File(...), db: AsyncSession = Depends(get_db)):
     content = await photo.read()
     try:
-        profile_id, score = await face_service.search(content)
+        search_result = await face_service.search(content)
+        profile_id_raw = search_result.get("external_image_id") or search_result.get("face_id")
+        score = float(search_result.get("similarity") or 0.0)
     except (ValueError, RuntimeError) as exc:
         return CheckInResponse(success=False, message=str(exc))
 
-    if profile_id is None:
+    if profile_id_raw is None:
         return CheckInResponse(success=False, message="未识别到匹配的人脸，请重试")
+
+    try:
+        profile_id = int(profile_id_raw)
+    except (TypeError, ValueError):
+        return CheckInResponse(success=False, message="人脸匹配结果无效")
 
     result = await db.execute(
         select(FaceProfile).where(FaceProfile.id == profile_id, FaceProfile.is_active.is_(True))
