@@ -19,8 +19,11 @@
     </section>
 
     <section id="recordsPanel" class="card" hidden>
-      <input id="recordDate" type="date">
-      <button id="btnLoad" class="btn secondary" type="button">按日期筛选</button>
+      <div class="filter-controls">
+        <input id="recordDate" type="date">
+        <button id="btnLoad" class="btn secondary" type="button">按日期筛选</button>
+        <button id="btnLoadAll" class="btn primary" type="button">查看全部</button>
+      </div>
       <ul id="recordList" class="list"></ul>
       <button id="btnLogout" class="btn secondary" type="button">注销</button>
     </section>

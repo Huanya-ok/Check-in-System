@@ -116,7 +116,17 @@ function generateToken(user) {
 
 async function handleMockRequest(url, options) {
   const method = options.method || 'GET';
-  const path = url.replace(API_BASE, '');
+  
+  // 解析URL，分离路径和查询参数
+  const urlObj = new URL(url);
+  let path = urlObj.pathname;  // 例如: "/api/check-in/records"
+  
+  // 移除 API 前缀（如果存在）
+  // API_BASE 可能是 "http://localhost:8000/api" 或 "http://localhost:8000"
+  const apiBasePath = new URL(API_BASE).pathname;  // "/api" 或 "/"
+  if (apiBasePath !== '/' && path.startsWith(apiBasePath)) {
+    path = path.substring(apiBasePath.length);  // "/api/check-in/records" -> "/check-in/records"
+  }
   
   console.log(`[Mock] ${method} ${path}`);
   
@@ -151,7 +161,7 @@ async function handleMockRequest(url, options) {
   
   // 查询个人签到记录
   if (path === '/check-in/records' && method === 'GET') {
-    return await handleGetRecords(url);
+    return await handleGetRecords(url);  // 传递完整URL以获取查询参数
   }
   
   // ==================== 教师总览 ====================
@@ -162,6 +172,7 @@ async function handleMockRequest(url, options) {
   }
   
   // 未匹配的路由
+  console.log('[Mock] Route not found:', path);
   return mockResponse({ error: 'Not Found' }, 404);
 }
 
@@ -321,17 +332,36 @@ async function handleGetRecords(url) {
   // 如果指定了日期,进一步筛选
   if (dateParam) {
     userRecords = userRecords.filter(r => {
-      const recordDate = new Date(r.check_in_time).toISOString().slice(0, 10);
-      return recordDate === dateParam;
+      // 将记录的UTC时间转换为本地时区的日期字符串 (YYYY-MM-DD)
+      const recordDate = new Date(r.check_in_time);
+      const recordYear = recordDate.getFullYear();
+      const recordMonth = String(recordDate.getMonth() + 1).padStart(2, '0');
+      const recordDay = String(recordDate.getDate()).padStart(2, '0');
+      const recordDateStr = `${recordYear}-${recordMonth}-${recordDay}`;
+
+      return recordDateStr === dateParam;
     });
   }
   
   // 按时间倒序排列
   userRecords.sort((a, b) => new Date(b.check_in_time) - new Date(a.check_in_time));
   
+  // 格式化响应数据，与后端 CheckInRecordResponse 保持一致
+  const formattedRecords = userRecords.map(record => ({
+    id: record.id,
+    face_profile_id: record.face_profile_id,
+    name: userProfile.name,
+    student_no: userProfile.student_no,
+    check_in_time: record.check_in_time,
+    similarity_score: record.similarity_score
+    // 注意：不包含 photo_path，与后端保持一致
+  }));
+  
+  console.log('[Mock] Returning', formattedRecords.length, 'formatted records');
+  
   await sleep(200);
   
-  return mockResponse(userRecords);
+  return mockResponse(formattedRecords);
 }
 
 async function handleTeacherOverview(url) {

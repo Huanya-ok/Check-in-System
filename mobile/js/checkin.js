@@ -38,6 +38,7 @@ async function startCamera() {
     isCameraOn = true;
     btnCamera.textContent = '关闭摄像头';
     btnCapture.disabled = false; // 启用拍照按钮
+    resultEl.hidden = true;
     
     console.log('[Camera] 摄像头已启动');
   } catch (err) {

@@ -225,5 +225,25 @@ input[type="text"], input[type="password"], input[type="date"], input[type="file
   padding: 12px;
 }
 
+.filter-controls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.filter-controls input[type="date"] {
+  flex: 1;
+  min-width: 140px;
+  margin-bottom: 0;
+}
+
+.filter-controls .btn {
+  flex: 1;
+  padding: 12px;
+  min-width: 100px;
+}
+
 footer { text-align: center; margin-top: 24px; }
 footer a { color: #4361ee; text-decoration: none; font-size: 0.9rem; }
