@@ -2,13 +2,13 @@
 
 纯手机端签到应用,与 `server/` 后端分离部署,通过 HTTP 调用 REST API。
 
-## 🚀 Mock 模式(无需后端)
+## Mock 模式(无需后端)
 
 **快速开始:** 双击运行 `start-mock.bat`(Windows) 或 `./start-mock.sh`(Mac/Linux)
 
 Mock 模式下,前端可以完全不依赖后端服务器独立运行,所有数据存储在浏览器本地。
 
-详细使用说明请查看 [MOCK_GUIDE.md](MOCK_GUIDE.md)
+详细使用说明请查看 [MOCK_GUIDE.md](./docs/MOCK_GUIDE.md)
 
 ### 测试账号
 
@@ -54,8 +54,6 @@ python -m http.server 3000
 4. 重启前端服务
 
 手机浏览器访问: `http://<电脑IP>:3000`
-
-> 手机需与电脑在同一 WiFi;`config.js` 中的 API 地址指向后端 `server`(默认 8000 端口)。
 
 ## 页面
 
